@@ -1,0 +1,934 @@
+---
+title: 'Predictive analytics assignment 1: Early Diabetes Risk Prediction'
+author: "Krishna Ravali J (Group 13)"
+date: "30/09/2020"
+output:
+  word_document: default
+  html_document: default
+  pdf_document: default
+---
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+#Loading essential libraries
+library(caret)
+library(ggplot2)
+library(xlsx)
+```
+
+Reading dataset in to R environment
+
+```{r read data, echo=FALSE}
+
+edd<- read.csv('C:/Users/krish/Downloads/diabetes_data_upload.csv')
+```
+
+Describing dataset
+
+```{r desc data, echo=FALSE}
+cat("type of dataset:\n",typeof(edd))
+cat("\nnumber of rows in dataset:\n",nrow(edd))
+cat("\ndimensions of dataset:\n",dim(edd))
+head(edd)
+```
+
+## Ploting the frequency of each input variable and the target variable 'class'
+
+```{r plot data, echo=FALSE}
+
+library(graphics)
+
+library(lattice)
+
+library(ggplot2)
+
+#plot age distribution
+hist(edd$Age,xlab='age',ylab='frequency',breaks=10,main="Histogram of age",col='orange',xlim=c(0,100),ylim=c(0,400),labels=TRUE)
+print("summary of age column:\n")
+summary(edd$Age)
+print("frequency table of age:\n")
+table(edd$Age)
+#plotting distribution of all the other categorical variables including target variable
+
+for (i in colnames(edd[2:17])) {
+p=as.data.frame(table(edd[[i]]))
+#print(i)
+#print(p)
+c=c('light green','orange')
+library(repr)
+plots<-ggplot(p,aes(x=Var1,y=Freq))+geom_bar(stat="identity",fill=c)+ labs( x=i, y="Frequency")+ geom_text(aes(label=Freq),vjust=0,size=5,color='blue')+theme(text = element_text(size=15))
+options(repr.plots.width=4,repr.plots.height=3)
+print(plots)
+}
+```
+
+Data cleaning
+```{r clean data, echo=FALSE}
+#setting counter to 0; which counts number of columns that has NAs
+c=0
+cat("Checking for missing data:\n")
+for (i in colnames(as.data.frame(edd))){
+if(sum(is.na(edd[[i]]))>0 ){c=c+1} }
+if (c>0){print("Nulls in the dataset")} else {print("No nulls in the dataset")}
+```
+
+Feature Engineering
+```{r feature engg, echo=FALSE}
+#From the data distribution seen above, all the input variables except age are binary; let us convert all the input variables to numeric
+edd$Gender <- ifelse(edd$Gender == "Male",1,0)
+cat("levels of gender \n",unique(edd$Gender))
+edd$Age<- ifelse(edd$Age<50,1,0)
+cat("levels of age \n",unique(edd$Age))
+edd[3:16] <- ifelse(edd[3:16] == "Yes",1,0)
+edd$class <- as.factor(ifelse(edd$class =="Positive",1,0))
+unique(edd$class)
+cat("type of modified dataset: \n",typeof(edd))
+cat("\n dimensions of dataset is: \n", dim(edd))
+
+```
+
+Modeling the data to predict target variable 'class':
+
+As the target variable contains discrete binary data, our goal is to resolve a Classification problem.
+
+Let us try different classification problems and evaluate them to finalize optimized model.
+
+step1)Splitting data:
+```{r knn split, echo=FALSE}
+#setting seed for reproduceability
+set.seed(100)
+#splitting data in to 70:30 ratio
+flag = sample(2, nrow(edd), replace = TRUE, prob=c(0.7, 0.3))
+#train set
+train_classif = edd[flag==1,]
+cat("Number of rows in training set: \n",nrow(train_classif))
+test_classif = edd[flag == 2,]
+head(test_classif)
+#cat("dimensions of test set: \n",dim(test_classif))
+#cat("checking if test data has both levels of class: \n")
+#table(test_classif$class)
+cat("\n Number of rows in test set: \n",nrow(test_classif))
+
+```
+
+
+step2) Obtaining significant input variables in the data
+
+```{r sig variables , echo=FALSE}
+#using glm to find significant input variable that impact target variable
+glmfit=glm(class ~ ., data=train_classif,family=binomial)
+print("summary of glm fit to check significant variables taking training data as source to observe \n")
+summary(glmfit)
+#observation
+print("From summary, it is observed that Age,Gender,Polyuria,Polydispia,Genital.thrush,Itching,Irritability are significant input variables that are impacting target variable class")
+
+```
+Technique1: KNN classification
+```{r}
+glmfit=glm(class ~ ., data=train_classif,family=binomial)
+summary(glmfit)
+```
+
+a)fitting data to model
+```{r fitting model, echo=FALSE}
+library(class)
+
+#using 5 neighbors
+edd.knn = knn(train_classif[,! names(train_classif) %in% c("class")],
+             test_classif[,! names(test_classif) %in% c("class")], train_classif$class, k=5)
+edd.knn
+# summary of results of above model fitting
+print("summary of knn model fit: \n")
+summary(edd.knn)
+tab_knn = table(test_classif$class, edd.knn)
+tab_knn
+cat("Obtaining confusion matrix between predicted and observed values: \n")
+library(caret)
+conf_matrix_knn_before_cv<-as.matrix(confusionMatrix(tab_knn),positive = "1")
+conf_matrix_knn_before_cv
+accuracy_knn_bef_all<-sum(diag(conf_matrix_knn_before_cv))/sum(conf_matrix_knn_before_cv)
+#cat("Accuracy % of knn classifier for 5 neighbors before cross validation for all variables considered is:", accuracy_knn_bef_all*100)
+#Accuracy of 92.156% is obtained before cross validating knn classifier
+
+```
+b) considering only sigificant inputs to train the model
+```{r sig knn, echo = FALSE}
+typeof(train_classif)
+#model 1
+#train set
+tknn<- data.frame(Age=train_classif$Age,Gender=train_classif$Gender,Polyuria=train_classif$Polyuria,Polydipsia=train_classif$Polydipsia,Itching=train_classif$Itching,Irritability=train_classif$Irritability)
+#test set
+tsknn<- data.frame(Age=test_classif$Age,Gender=test_classif$Gender,Polyuria=test_classif$Polyuria,Polydipsia=test_classif$Polydipsia,Itching=test_classif$Itching,Irritability=test_classif$Irritability)
+#dim(tsknn)
+tknn_labels <- train_classif$class
+tsknn_labels<- test_classif$class
+#model 2 ignoring age variable while trainin gand testing
+tknn1<- data.frame(Gender=train_classif$Gender,Polyuria=train_classif$Polyuria,Polydipsia=train_classif$Polydipsia,Itching=train_classif$Itching,Irritability=train_classif$Irritability)
+
+tsknn1<- data.frame(Gender=test_classif$Gender,Polyuria=test_classif$Polyuria,Polydipsia=test_classif$Polydipsia,Itching=test_classif$Itching,Irritability=test_classif$Irritability)
+#model 1
+knnfitsig <- knn(train=tknn,test=tsknn,k=5,cl=tknn_labels) 
+knnfitsig
+#model 2
+knnfitsig1 <- knn(train=tknn1,test=tsknn1,k=5,cl=tknn_labels) 
+knnfitsig1
+
+#obtaining confusion matrix
+#Model 1
+tab_knn_sig = table(test_classif$class, knnfitsig)
+tab_knn_sig
+
+conf_matrix_sig_knn_before_cv<-as.matrix(confusionMatrix(tab_knn_sig,positive = "1"))
+conf_matrix_sig_knn_before_cv
+accuracy_knn_sig_bef<-sum(diag(conf_matrix_sig_knn_before_cv))/sum(conf_matrix_sig_knn_before_cv)
+#cat("Accuracy % of knn classifier for 5 neighbors before cross validation for all significant variables is:", accuracy_knn_sig_bef*100)
+
+#Model 2
+tab_knn_sig1 = table(test_classif$class, knnfitsig1)
+tab_knn_sig1
+
+conf_matrix_sig1_knn_before_cv<-as.matrix(confusionMatrix(tab_knn_sig1,positive = "1"))
+conf_matrix_sig1_knn_before_cv
+accuracy_knn_sig1_before_cv<-sum(diag(conf_matrix_sig1_knn_before_cv))/sum(conf_matrix_sig1_knn_before_cv)
+#cat("Accuracy % of knn classifier for 5 neighbors before cross validation for all significant variables except age is:", accuracy_knn_sig1_before_cv*100)
+```
+
+c)cross validating the knn model for all inputs
+```{r cross val, eco=FALSE}
+#using 5 fold cross validation and tune length of 20
+set.seed=100
+ctrl <- trainControl(method="repeatedcv",repeats = 5,savePredictions = 'final')
+#first testing cross validation on whole set of input variables 
+#train fuction helps to tune our classification parameters and fits each model and gives performance metrics
+knnfitdiab <- train(class ~ ., data = edd, method = "knn", 
+          trControl = ctrl, preProcess = c("center","scale"),tuneLength = 20,metric='Accuracy') 
+knnfitdiab
+#Highest accuracy of 91.2912% is attained at k=7 (obtained 90.84 at k=5 for a trigger.  )
+#accuracy and k value migh slightly alter with each trigger
+
+#predicting target variable based on the above model
+pred_knn_after_cv = predict(knnfitdiab, newdata=test_classif)
+pred_knn_after_cv
+
+#testing$Class
+#confusion matrix
+conf_mat_knn_after_cv=as.matrix(confusionMatrix(data=pred_knn_after_cv,(test_classif$class),positive="1"))
+conf_mat_knn_after_cv
+diag(conf_mat_knn_after_cv)
+#pos pred value is TPR 
+accuracy_knn_after_cv_all<-sum(diag(conf_mat_knn_after_cv))/sum(conf_mat_knn_after_cv)
+#cat("Accuracy % of knn classifier model using all variables after cross validation is:", accuracy_knn_after_cv_all*100)
+
+#plotting the model accuracy
+plot(knnfitdiab,main="Plot-Accuracy w.r.to number of neighbours using all variables after CV",col='brown')
+
+```
+
+d)cross validating knn model built only on significant variables
+```{r cross val sig, echo =FALSE}
+
+#training knn model with only significant input variables 
+#model 1 (all significant)
+knnfitdiabsig <- train(class~Age+Gender+Polyuria+Polydipsia+Genital.thrush+Itching+Irritability+sudden.weight.loss, data = edd, method = "knn", 
+          trControl = ctrl, preProcess = c("center","scale"),tuneLength =20,metric='Accuracy') 
+knnfitdiabsig
+#Highest accuracy of 91.28% is attained at k=11
+#accuracy and k value migh slightly alter with each trigger
+
+#predicting target variable based on the above model
+pred_knn_after_cv_sig = predict(knnfitdiabsig, newdata=test_classif)
+pred_knn_after_cv_sig
+
+#testing$Class
+#confusion matrix
+conf_mat_knn_after_cv_sig=as.matrix(confusionMatrix(data=pred_knn_after_cv_sig,(test_classif$class),positive="1"))
+conf_mat_knn_after_cv_sig
+diag(conf_mat_knn_after_cv_sig)
+#pos pred value is TPR 
+accuracy_knn_after_cv_sig<-sum(diag(conf_mat_knn_after_cv_sig))/sum(conf_mat_knn_after_cv_sig)
+#cat("Accuracy % of knn classifier model using all significant variables after cross validation is:", accuracy_knn_after_cv_sig*100)
+
+#plotting model1
+plot(knnfitdiabsig,main="Plot-Accuracy w.r.to number of neighbours using all significant variables after CV",col='brown')
+
+
+#model 2 (all significant except age)
+knnfitdiabsig1 <- train(class ~ Gender+Polyuria+Polydipsia+Genital.thrush+Itching+Irritability+sudden.weight.loss, data = edd, method = "knn", 
+          trControl = ctrl, preProcess = c("center","scale"),tuneLength = 20,metric='Accuracy') 
+knnfitdiabsig1
+#Highest accuracy of 90.44% is attained at k=27 by dropping age from significant input variables list
+#accuracy and k value migh slightly alter with each trigger
+
+#predicting target variable based on the above model
+pred_knn_after_cv_sig1 = predict(knnfitdiabsig1, newdata=test_classif)
+pred_knn_after_cv_sig1
+
+#testing$Class
+conf_mat_knn_after_cv_sig1=as.matrix(confusionMatrix(data=pred_knn_after_cv_sig1,(test_classif$class),positive="1"))
+conf_mat_knn_after_cv_sig1
+diag(conf_mat_knn_after_cv_sig1)
+#pos pred value is TPR 
+accuracy_knn_after_cv_sig1<-sum(diag(conf_mat_knn_after_cv_sig1))/sum(conf_mat_knn_after_cv_sig1)
+#cat("Accuracy % of knn classifier using significant variables except age after cross validation is:", accuracy_knn_after_cv_sig1*100)
+#plotting model2
+plot(knnfitdiabsig1,main="Plot-Accuracy w.r.to number of neighbours using all significant variables except age after CV",col='brown')
+
+```
+
+
+2.Technique: Logistic Regression
+
+a)Training the data using logistic regression model for classifying data
+```{r logistic model, echo=FALSE }
+
+edd.lg <- train(class ~ .,  data=train_classif, method="glm",family=binomial(logit),metric='Accuracy')
+
+
+# summary of results of above model fitting
+print("summary of logistic regression model fit: ")
+summary(edd.lg)
+#obtaining odds ratio of each independent variable
+exp(coef(edd.lg$finalModel))
+#predicting target variable based on logistic regression model
+cat("Predicted target variable: \n")
+predict(edd.lg, newdata=test_classif)
+cat("dimension of test data: \n")
+dim(test_classif)
+#predicting probabilities
+#cat("Probabilities of prediction using logistic regression: \n")
+#predict(edd.lg, newdata=test_classif, type="prob")
+
+#saving predicted data in to a variable
+pred_lg = predict(edd.lg, newdata=test_classif)
+
+cat("Obtaining confusion matrix between predicted and observed values:\n")
+conf_matrix_lg_before_cv<-as.matrix(confusionMatrix(pred_lg,test_classif$class,positive = "1"))
+conf_matrix_lg_before_cv
+accuracy_lg_all_before_cv<-sum(diag(conf_matrix_lg_before_cv))/sum(conf_matrix_lg_before_cv)
+#cat("Accuracy % of logistic regression classifier before cross validation is:", accuracy_lg_all_before_cv*100)
+
+```
+
+b) logistic regression model using significant variables
+```{r,echo=FALSE}
+#building different lg models using only significant input variables
+
+lg_mod1<- glm(class ~ Age +Gender+ Polyuria+Polydipsia+Itching+Irritability+Genital.thrush, data=train_classif, family=binomial(logit))
+
+lg_mod2<- glm(class ~ Gender + Polyuria+Polydipsia+Itching+Irritability+Genital.thrush, data=train_classif, family=binomial(logit))
+
+lg_mod3<- glm(class ~ Age+ Gender +partial.paresis+ Polyuria+Polydipsia+Itching+Irritability+Genital.thrush, data=train_classif, family=binomial(logit))
+
+lg_mod4<- glm(class ~ Age+ Gender +partial.paresis+sudden.weight.loss+ Polyuria+Polydipsia+Itching+Irritability+Genital.thrush, data=train_classif, family=binomial(logit))
+
+
+
+#evalutaing between model
+anova(lg_mod1,lg_mod2, lg_mod3,lg_mod4,test ="Chisq")
+
+#obtaining likelihood results value
+library(lmtest)
+lrtest(lg_mod1, lg_mod2,lg_mod3,lg_mod4)
+#here model 3 is sigificant with 99% confidence interval
+dim(test_classif)
+#metrics
+pred_lg_before_cv = predict(lg_mod3,newdata=test_classif,type="response")
+pred_lg_before_cv
+
+predicted_val_lg_before_cv<- as.factor(ifelse(pred_lg_before_cv > 0.50,1,0))
+
+predicted_val_lg_before_cv
+
+#finding accuracy of model
+
+#confusion matrix
+typeof(test_classif$class)
+typeof(predicted_val_lg_before_cv)
+levels(predicted_val_lg_before_cv)
+conf_mat_lg_sig_before_cv=as.matrix(confusionMatrix(data=predicted_val_lg_before_cv,test_classif$class,positive = "1"))
+conf_mat_lg_sig_before_cv
+
+diag(conf_mat_lg_sig_before_cv)
+#pos pred value is TPR 
+accuracy_lg_sig_before_cv<-sum(diag(conf_mat_lg_sig_before_cv))/sum(conf_mat_lg_sig_before_cv)
+#cat("Accuracy % of logistic regression classifier using significant variables in an optimum model before cross validation is:", accuracy_lg_sig_before_cv*100)
+
+
+```
+
+c) cross validating the model with all inputs
+```{r lg cross val, echo=FALSE}
+lgfit_all <- train(class ~ ., data = edd, method = "glm", trControl = ctrl, preProcess = c("center","scale"),tuneLength = 20,metric='Accuracy') 
+
+#tunelength is number of output rows
+
+#predicting target variable based on the above model
+
+pred_lg_after_cv_all = predict(lgfit_all, newdata=test_classif)
+pred_lg_after_cv_all
+#testing$Class
+conf_mat_lg_after_cv=as.matrix(confusionMatrix(data=pred_lg_after_cv_all,(test_classif$class),positive="1"))
+conf_mat_lg_after_cv
+diag(conf_mat_lg_after_cv)
+#pos pred value is TPR 
+accuracy_lg_all_after_cv<-sum(diag(conf_mat_lg_after_cv))/sum(conf_mat_lg_after_cv)
+#cat("Accuracy % of logistic regression classifier using all variables in an optimum model after cross validation is:", accuracy_lg_all_after_cv*100)
+
+```
+
+d) cross validating the model with significant model obtained from above
+```{r cross val lg sig, echo=FALSE}
+#using only significant variables
+lgfit_mod3 <- train(class ~ Age+ Gender +partial.paresis+ Polyuria+Polydipsia+Itching+Irritability+Genital.thrush, data = edd, method = "glm", 
+                     trControl = ctrl, preProcess = c("center","scale"),tuneLength = 20,metric='Accuracy') 
+#tunelength is number of output rows
+lgfit_mod3 
+#predicting target variable based on the above model
+pred_lg_after_cv_sig = predict(lgfit_mod3, newdata=test_classif)
+pred_lg_after_cv_sig
+
+#testing$Class
+conf_mat_lg_after_cv_sig=as.matrix(confusionMatrix(data=pred_lg_after_cv_sig,(test_classif$class),positive="1"))
+conf_mat_lg_after_cv_sig
+diag(conf_mat_lg_after_cv_sig)
+#pos pred value is TPR 
+accuracy_lg_after_cv_sig<-sum(diag(conf_mat_lg_after_cv_sig))/sum(conf_mat_lg_after_cv_sig)
+#cat("Accuracy % of logistic regression classifier using significant variables in an optimum model after cross validation is:", accuracy_lg_after_cv_sig*100)
+```
+
+Technique 3: Naive Baye's Classifier
+
+```{r nb ,echo=FALSE}
+
+library(e1071)
+nbc=naiveBayes(train_classif[,!names(train_classif) %in% c("class")],train_classif$class)
+#classifier to examine func call, apriori prob, and conditional prob
+nbc
+summary(nbc)
+#classif table for test data
+nb_table=table(predict(nbc,test_classif[,!names(test_classif) %in% c("class")]),test_classif$class)
+nb_table
+conf_nb=as.matrix(confusionMatrix(nb_table,positive="1"))
+conf_nb
+diag(conf_nb)
+#pos pred value is TPR 
+accuracy_nb_before_cv_all<-sum(diag(conf_nb))/sum(conf_nb)
+#cat("Accuracy % of NB classifier model using all variables before cross validation is:", accuracy_nb_before_cv_all*100)
+
+
+# using significant model:
+
+nbc1=naiveBayes(train_classif[,!names(train_classif) %in%
+c("class","weakness","Polyphagia","visual.blurring","delayed.healing","partial.paresis","muscle.stiffness","Alopecia","Obesity")],train_classif$class)
+
+#classifier to examine func call, apriori prob,
+#and conditional prob
+#nbc1
+summary(nbc1)
+#classif table for test data
+#typeof(nbc1)
+#typeof(tsknn)
+#typeof(as.factor(test_classif$class))
+
+nbc_table1=table(predict(nbc1,test_classif[,!names(test_classif) %in%
+c("class","weakness","Polyphagia","visual.blurring","delayed.healing","partial.paresis","muscle.stiffness","Alopecia","Obesity")]),test_classif$class)
+#test_classif$class
+nbc_table1
+
+conf_nb_sig=as.matrix(confusionMatrix(nbc_table1))
+diag(conf_nb_sig)
+#pos pred value is TPR 
+accuracy_nb_before_cv_sig<-sum(diag(conf_nb_sig))/sum(conf_nb_sig)
+#cat("Accuracy % of NB classifier model using significant variables before cross validation is:", accuracy_nb_before_cv_sig*100)
+
+
+```
+b) using cross validation for all variables:
+```{r nb cross val,echo=FALSE,warning=FALSE}
+
+
+nb_cv_all <- train(class~. , data = edd, method = "nb", 
+          trControl = ctrl, preProcess = c("center","scale"),tuneLength =20,metric='Accuracy') 
+
+
+#predicting target variable based on the above model
+pred_nb_after_cv_all = predict(nb_cv_all, newdata=test_classif)
+pred_nb_after_cv_all
+
+#testing$Class
+conf_mat_nb_after_cv_all=as.matrix(confusionMatrix(data=pred_nb_after_cv_all,(test_classif$class),positive="1"))
+conf_mat_nb_after_cv_all
+diag(conf_mat_nb_after_cv_all)
+#pos pred value is TPR 
+accuracy_nb_after_cv_all<-sum(diag(conf_mat_nb_after_cv_all))/sum(conf_mat_nb_after_cv_all)
+#cat("Accuracy % of NB classifier model using all variables after cross validation is:", accuracy_nb_after_cv_all*100)
+
+```
+c) using cross validation on model using significant variables only
+```{r nb cross val for sig,echo=FALSE}
+
+nb_cv_sig <- train(class~Age+Gender+Polyuria+Polydipsia+Genital.thrush+Itching+Irritability+sudden.weight.loss, data = edd, method = "nb", 
+          trControl = ctrl, preProcess = c("center","scale"),tuneLength =20,metric='Accuracy') 
+
+nb_cv_sig
+
+#predicting target variable based on the above model
+pred_nb_after_cv_sig = predict(nb_cv_sig, newdata=test_classif)
+pred_nb_after_cv_sig
+
+#testing$Class
+#confusion matrix
+conf_mat_nb_after_cv_sig=as.matrix(confusionMatrix(data=pred_nb_after_cv_sig,(test_classif$class),positive="1"))
+conf_mat_nb_after_cv_sig
+diag(conf_mat_nb_after_cv_sig)
+#pos pred value is TPR 
+accuracy_nb_after_cv_sig<-sum(diag(conf_mat_nb_after_cv_sig))/sum(conf_mat_nb_after_cv_sig)
+#cat("Accuracy % of NB classifier model using significant variables after cross validation is:", accuracy_nb_after_cv_sig*100)
+
+```
+
+Technique4: Support Vector Machine
+```{r svm,echo=FALSE}
+
+svm_mod=svm(class ~., data=train_classif,kernel="radial",cost=1,gamma=1/ncol(train_classif))
+
+#finally obtain overall info about built model
+summary(svm_mod)
+
+svm_table=table(predict(svm_mod,test_classif[,!names(test_classif) %in% c("churn")]),test_classif$class)
+
+conf_mat_svm=as.matrix(confusionMatrix(svm_table,positive="1"))
+conf_mat_svm
+accuracy_svm_all<-sum(diag(conf_mat_svm))/sum(conf_mat_svm)
+#cat("Accuracy % of SVM classifier model using all variables before cross validation is:", accuracy_svm_all*100)
+
+# using significant model:
+
+svm1=svm(train_classif[,!names(train_classif) %in%
+c("class","weakness","Polyphagia","visual.blurring","delayed.healing","partial.paresis","muscle.stiffness","Alopecia","Obesity")],train_classif$class)
+
+#classifier to examine func call, apriori prob,
+#and conditional prob
+svm1
+summary(svm1)
+#classif table for test data
+#typeof(svm1)
+#typeof(tsknn)
+#typeof(as.factor(test_classif$class))
+
+svm_table1=table(predict(svm1,test_classif[,!names(test_classif) %in%
+c("class","weakness","Polyphagia","visual.blurring","delayed.healing","partial.paresis","muscle.stiffness","Alopecia","Obesity")]),test_classif$class)
+test_classif$class
+svm_table1
+
+conf_svm1=as.matrix(confusionMatrix(svm_table1,positive = "1"))
+conf_svm1
+accuracy_svm_sig<-sum(diag(conf_svm1))/sum(conf_svm1)
+#cat("Accuracy % of SVM classifier model using all variables before cross validation is:", accuracy_svm_sig*100)
+
+```
+
+b) using parameter tuning(using grid search) on all variables:
+```{r svm cross val,echo=FALSE}
+library(e1071)
+
+#find optimal parameters in a specified range
+library(dplyr)
+tune_out <- tune.svm(class~., data=train_classif, kernel="radial", cost=c(0.001, 0.01, 0.1, 1,5,10))
+summary(tune_out)
+tune_out
+#build model
+best_mod = tune_out$best.model
+tune.test = predict(best_mod, newdata=test_classif)
+conf_svm_cv_all=table(tune.test, test_classif$class)
+accuracy_svm_cv_all<-sum(diag(conf_svm_cv_all))/sum(conf_svm_cv_all)
+#cat("Accuracy % of SVM classifier model using all variables after optimising/tuning is:", accuracy_svm_cv_all*100)
+
+```
+c) using parameter tuning(using grid search) for only significant variables:
+```{r svm cross val significant,echo=FALSE}
+
+
+tune_out_sig <- tune.svm(class~Age+Gender+Polyuria+Polydipsia+Genital.thrush+Itching+Irritability+sudden.weight.loss, data=train_classif, kernel="radial", cost=c(0.001, 0.01, 0.1, 1,5,10))
+summary(tune_out_sig)
+#build model
+best_mod_sig = tune_out_sig$best.model
+tune.test_sig = predict(best_mod_sig, newdata=test_classif)
+conf_svm_cv_sig=table(tune.test_sig, test_classif$class)
+confusionMatrix(conf_svm_cv_sig,positive="1")
+
+accuracy_svm_cv_sig<-sum(diag(conf_svm_cv_sig))/sum(conf_svm_cv_sig)
+#cat("Accuracy % of SVM classifier model using all variables before tuning/optimising is:", accuracy_svm_cv_sig*100)
+      
+```
+
+Metrics comparison of all 4 classifications techniques:
+```{r metrics}
+
+get_sensitivity <- function(conf){
+  confusion_table<-conf
+  TP = confusion_table[2,2]
+  TN = confusion_table[1,1]
+  FN = confusion_table[1,2]
+  FP = confusion_table[2,1]
+  sensitivity = TP / (TP + FN)
+  return(sensitivity)
+}
+
+get_specificity <- function(conf){
+  confusion_table <- conf
+  TP = confusion_table[2,2]
+  TN = confusion_table[1,1]
+  FN = confusion_table[1,2]
+  FP = confusion_table[2,1]
+  specificity = TN / (TN + FP)
+  return(specificity)
+}
+
+
+get_precision <- function(conf){
+  confusion_table = conf
+  TP = confusion_table[2,2]
+  TN = confusion_table[1,1]
+  FN = confusion_table[1,2]
+  FP = confusion_table[2,1]
+  
+  precision = TP / (TP + FP)
+  
+  return(precision)
+}
+
+get_f1_score <- function(conf){
+  confusion_table = conf
+  TP = confusion_table[2,2]
+  TN = confusion_table[1,1]
+  FN = confusion_table[1,2]
+  FP = confusion_table[2,1]
+  
+  precision = round(TP / (TP + FP), 2)
+  sensitivity = round(TP / (TP + FN), 2)
+  f1_score = (2 * precision * sensitivity) / (precision + sensitivity)
+  return(f1_score)
+}
+
+get_classification_error_rate <- function(conf){
+  confusion_table = conf
+  TP = confusion_table[2,2]
+  TN = confusion_table[1,1]
+  FN = confusion_table[1,2]
+  FP = confusion_table[2,1]
+  classification_error_rate = (FP + FN) / sum(TP,FP,TN,FN)
+  return(classification_error_rate)
+}
+
+metric_matrix<- matrix(c(accuracy_knn_bef_all,get_sensitivity(conf_matrix_knn_before_cv),get_specificity(conf_matrix_knn_before_cv),get_f1_score(conf_matrix_knn_before_cv),get_classification_error_rate(conf_matrix_knn_before_cv),get_precision(conf_matrix_knn_before_cv),
+accuracy_knn_sig_bef,get_sensitivity(conf_matrix_sig_knn_before_cv),get_specificity(conf_matrix_sig_knn_before_cv),get_f1_score(conf_matrix_sig_knn_before_cv),get_classification_error_rate(conf_matrix_sig_knn_before_cv),get_precision(conf_matrix_sig_knn_before_cv),
+accuracy_knn_sig1_before_cv,get_sensitivity(conf_matrix_sig1_knn_before_cv),get_specificity(conf_matrix_sig1_knn_before_cv),get_f1_score(conf_matrix_sig1_knn_before_cv),get_classification_error_rate(conf_matrix_sig1_knn_before_cv),get_precision(conf_matrix_sig1_knn_before_cv),
+accuracy_knn_after_cv_all,get_sensitivity(conf_mat_knn_after_cv),get_specificity(conf_mat_knn_after_cv),get_f1_score(conf_mat_knn_after_cv),get_classification_error_rate(conf_mat_knn_after_cv),get_precision(conf_mat_knn_after_cv),
+accuracy_knn_after_cv_sig,get_sensitivity(conf_mat_knn_after_cv_sig),get_specificity(conf_mat_knn_after_cv_sig),get_f1_score(conf_mat_knn_after_cv_sig),get_classification_error_rate(conf_mat_knn_after_cv_sig),get_precision(conf_mat_knn_after_cv_sig),
+accuracy_knn_after_cv_sig1,get_sensitivity(conf_mat_knn_after_cv_sig1),get_specificity(conf_mat_knn_after_cv_sig1),get_f1_score(conf_mat_knn_after_cv_sig1),get_classification_error_rate(conf_mat_knn_after_cv_sig1),get_precision(conf_mat_knn_after_cv_sig1),
+accuracy_lg_all_before_cv,get_sensitivity(conf_matrix_lg_before_cv),get_specificity(conf_matrix_lg_before_cv),get_f1_score(conf_matrix_lg_before_cv),get_classification_error_rate(conf_matrix_lg_before_cv),get_precision(conf_matrix_lg_before_cv),
+accuracy_lg_sig_before_cv,get_sensitivity(conf_mat_lg_sig_before_cv),get_specificity(conf_mat_lg_sig_before_cv),get_f1_score(conf_mat_lg_sig_before_cv),get_classification_error_rate(conf_mat_lg_sig_before_cv),get_precision(conf_mat_lg_sig_before_cv),
+accuracy_lg_all_after_cv,get_sensitivity(conf_mat_lg_after_cv),get_specificity(conf_mat_lg_after_cv),get_f1_score(conf_mat_lg_after_cv),get_classification_error_rate(conf_mat_lg_after_cv),get_precision(conf_mat_lg_after_cv),
+accuracy_lg_after_cv_sig,get_sensitivity(conf_mat_lg_after_cv_sig),get_specificity(conf_mat_lg_after_cv_sig),get_f1_score(conf_mat_lg_after_cv_sig),get_classification_error_rate(conf_mat_lg_after_cv_sig),get_precision(conf_mat_lg_after_cv_sig),
+accuracy_nb_before_cv_all,get_sensitivity(conf_nb),get_specificity(conf_nb),get_f1_score(conf_nb),get_classification_error_rate(conf_nb),get_precision(conf_nb),
+accuracy_nb_before_cv_sig,get_sensitivity(conf_nb_sig),get_specificity(conf_nb_sig),get_f1_score(conf_nb_sig),get_classification_error_rate(conf_nb_sig),get_precision(conf_nb_sig),
+accuracy_nb_after_cv_all,get_sensitivity(conf_mat_nb_after_cv_all),get_specificity(conf_mat_nb_after_cv_all),get_f1_score(conf_mat_nb_after_cv_all),get_classification_error_rate(conf_mat_nb_after_cv_all),get_precision(conf_mat_nb_after_cv_all),
+accuracy_nb_after_cv_sig,get_sensitivity(conf_mat_nb_after_cv_sig),get_specificity(conf_mat_nb_after_cv_sig),get_f1_score(conf_mat_nb_after_cv_sig),get_classification_error_rate(conf_mat_nb_after_cv_sig),get_precision(conf_mat_nb_after_cv_sig),
+accuracy_svm_all,get_sensitivity(conf_mat_svm),get_specificity(conf_mat_svm),get_f1_score(conf_mat_svm),get_classification_error_rate(conf_mat_svm),get_precision(conf_mat_svm),
+accuracy_svm_sig,get_sensitivity(conf_svm1),get_specificity(conf_svm1),get_f1_score(conf_svm1),get_classification_error_rate(conf_svm1),get_precision(conf_svm1),
+accuracy_svm_cv_all,get_sensitivity(conf_svm_cv_all),get_specificity(conf_svm_cv_all),get_f1_score(conf_svm_cv_all),get_classification_error_rate(conf_svm_cv_all),get_precision(conf_svm_cv_all),
+accuracy_svm_cv_sig,get_sensitivity(conf_svm_cv_sig),get_specificity(conf_svm_cv_sig),get_f1_score(conf_svm_cv_sig),get_classification_error_rate(conf_svm_cv_sig),get_precision(conf_svm_cv_sig)
+),nrow=18,ncol=6,byrow=TRUE)
+colnames(metric_matrix) <- c("Accuracy","Recall or Sensitivity","Specificity","F1-score","Classification Error Rate","Precision")
+rownames(metric_matrix) <- c("KNN - using all variables", "KNN - using only significant variables", 
+                                "KNN - using only significant variables except Age","KNN - cross validation using all variables", "KNN - cross validation using only significant variables", 
+                                "KNN - cross validation using only significant variables except Age","Logistic Regression - using all variables","Logistic Regression - using significant model","Logistic Regression - cross validation using all variables","Logistic Regression - cross validation using significant model","Naive Bayes Classifier - using all variables","Naive Bayes Classifier - using significant variables","Naive Bayes Classifier - cross validation using all variables","Naive Bayes Classifier - cross validation using significant variables","SVM Classifier - using all variables","SVM Classifier - using significant variables","SVM Classifier - using performance tuning on all variables","SVM Classifier - using performance tuning on significant variables")
+
+metric_matrix<-as.data.frame(metric_matrix*100)
+metric_matrix
+library(tibble)
+view(metric_matrix)
+```
+
+Obtaining ROC values for all four classification techniques:
+```{r roc calc, echo=FALSE}
+
+#install.packages("pROC")
+#install.packages("ROCR")
+library(pROC)
+library(ROCR)
+
+#after cross validation
+# Compute AUC for predicting Class with the two models of knn classifier
+#model1
+
+prob_knn <- predict(knnfitdiab, newdata=test_classif,type="prob")
+head(prob_knn)
+
+pred_knn <- prediction(prob_knn[,2], test_classif$class)
+
+perf_knn <- performance(pred_knn, measure = "tpr", x.measure = "fpr")
+
+auc_knn <- performance(pred_knn, measure = "auc")
+auc_knn <- auc_knn@y.values[[1]]
+auc_knn
+
+#model2
+
+prob_knn1 <- predict(knnfitdiabsig, newdata=test_classif, type="prob")
+pred_knn1 <- prediction(prob_knn1[,2], test_classif$class)
+perf_knn1 <- performance(pred_knn1, measure = "tpr", x.measure = "fpr")
+
+auc_knn1 <- performance(pred_knn1, measure = "auc")
+auc_knn1 <- auc_knn1@y.values[[1]]
+auc_knn1
+
+#model3
+
+prob_knn2 <- predict(knnfitdiabsig1, newdata=test_classif, type="prob")
+pred_knn2 <- prediction(prob_knn2[,2], test_classif$class)
+perf_knn2 <- performance(pred_knn2, measure = "tpr", x.measure = "fpr")
+
+auc_knn2 <- performance(pred_knn2, measure = "auc")
+auc_knn2 <- auc_knn2@y.values[[1]]
+auc_knn2
+
+# Compute AUC for predicting Class with the optimum logistic regression model 3
+
+prob_lg <- predict(lg_mod3, newdata=test_classif, type="response")
+prob_lg 
+
+pred_lg <- prediction(prob_lg, test_classif$class)
+perf_lg <- performance(pred_lg, measure = "tpr", x.measure = "fpr")
+
+auc_lg <- performance(pred_lg, measure = "auc")
+auc_lg <- auc_lg@y.values[[1]]
+auc_lg
+
+#NB
+prob_nb <- predict(nb_cv_sig, newdata=test_classif , type="prob")
+pred_nb <- prediction(prob_nb[,2], test_classif$class)
+# precision/recall curve 
+perf_nb <- performance(pred_nb, measure = "tpr", x.measure = "fpr")
+
+
+auc_nb <- performance(pred_nb, measure = "auc")
+auc_nb <- auc_nb@y.values[[1]]
+auc_nb
+
+#svm
+prob_svm <- predict(svm_mod, newdata=test_classif , type="prob")
+pred_svm <- prediction(as.integer(prob_svm), test_classif$class)
+perf_svm <- performance(pred_svm, measure = "tpr", x.measure = "fpr")
+
+
+auc_svm <- performance(pred_svm, measure = "auc")
+auc_svm <- auc_svm@y.values[[1]]
+auc_svm
+```
+
+Plotting auc curves for all techniques
+```{r plot roc, echo=FALSE}
+
+plot(perf_knn,col='red',main="ROC curves of all 4 classification techniques",xlab="FPR",ylab="TPR",col.main='sea green',legend=TRUE,auc=TRUE,add.legend=TRUE)
+
+plot(perf_knn1,col='blue',xlab="FPR",ylab="TPR",col.main='sea green',legend=TRUE,auc=TRUE,add.legend=TRUE,add=TRUE)
+
+
+plot(perf_knn2,col='purple',xlab="FPR",ylab="TPR",col.main='sea green',legend=TRUE,auc=TRUE,add.legend=TRUE,add=TRUE)
+
+
+plot(perf_lg,col='purple',xlab="FPR",ylab="TPR",col.main='sea green',legend=TRUE,auc=TRUE,add.legend=TRUE,add=TRUE)
+
+
+plot(perf_nb,col='brown',xlab="FPR",ylab="TPR",col.main='sea green',legend=TRUE,auc=TRUE,add.legend=TRUE,add=TRUE)
+
+
+plot(perf_svm,col='yellow',xlab="FPR",ylab="TPR",col.main='sea green',legend=TRUE,auc=TRUE,add.legend=TRUE,add=TRUE)
+
+knn<-paste("KNN all auc:",round(as.numeric(auc_knn), digits = 2))
+knn1<-paste("KNN sig all auc:",round(as.numeric(auc_knn1), digits = 2))
+knn2<-paste("KNN sig all but age auc:",round(as.numeric(auc_knn1), digits = 2))
+lg<-paste("LG auc is:",round(as.numeric(auc_lg), digits = 2))
+nb<-paste("NB auc is:",round(as.numeric(auc_nb), digits = 2))
+svm<-paste("SVM auc is:",round(as.numeric(auc_svm), digits = 2))
+
+legend("bottomright" ,c(knn,knn1,knn2,lg,nb,svm), fill = c("red","blue","green","purple","brown","yellow"),cex=0.6)
+
+
+```
+
+
+```{r confusion matrix}
+conf_matrix_knn_before_cv
+conf_matrix_sig_knn_before_cv
+conf_matrix_sig1_knn_before_cv
+conf_mat_knn_after_cv
+conf_mat_knn_after_cv_sig
+conf_mat_knn_after_cv_sig1
+conf_matrix_lg_before_cv
+conf_mat_lg_sig_before_cv
+conf_mat_lg_after_cv
+conf_mat_lg_after_cv_sig
+conf_nb
+conf_nb_sig
+conf_mat_nb_after_cv_all
+conf_mat_nb_after_cv_sig
+conf_mat_svm
+conf_svm1
+conf_svm_cv_all
+conf_svm_cv_sig
+
+fourfoldplot(conf_matrix_knn_before_cv,conf.level = 0, margin = 1,color=c('yellow','blue'),main="CM-KNN using all variables before CV")+ 
+    text(-0.4,0.4, "TN", cex=1) + 
+    text(0.4, -0.4, "TP", cex=1) + 
+    text(0.4,0.4, "FN", cex=1) + 
+    text(-0.4, -0.4, "FP", cex=1)+
+    text(-1.2,0.3,"Actual",cex=1)+
+    text(0.7,1.2,"Predicted",cex=1)
+fourfoldplot(conf_matrix_sig_knn_before_cv,conf.level = 0, margin = 1,color=c('yellow','blue'),main="CM-KNN using all significant variables before CV")+ 
+    text(-0.4,0.4, "TN", cex=1) + 
+    text(0.4, -0.4, "TP", cex=1) + 
+    text(0.4,0.4, "FN", cex=1) + 
+    text(-0.4, -0.4, "FP", cex=1)+
+    text(-1.2,0.3,"Actual",cex=1)+
+    text(0.7,1.2,"Predicted",cex=1)
+fourfoldplot(conf_matrix_sig1_knn_before_cv,conf.level = 0, margin = 1,color=c('yellow','blue'),main="CM-KNN using all significant variables except age before CV")+ 
+    text(-0.4,0.4, "TN", cex=1) + 
+    text(0.4, -0.4, "TP", cex=1) + 
+    text(0.4,0.4, "FN", cex=1) + 
+    text(-0.4, -0.4, "FP", cex=1)+
+    text(-1.2,0.3,"Actual",cex=1)+
+    text(0.7,1.2,"Predicted",cex=1)
+fourfoldplot(conf_mat_knn_after_cv,conf.level = 0, margin = 1,color=c('orange','purple'),main="CM-KNN using all variables after CV")+ 
+    text(-0.4,0.4, "TN", cex=1) + 
+    text(0.4, -0.4, "TP", cex=1) + 
+    text(0.4,0.4, "FN", cex=1) + 
+    text(-0.4, -0.4, "FP", cex=1)+
+    text(-1.2,0.3,"Actual",cex=1)+
+    text(0.7,1.2,"Predicted",cex=1)
+fourfoldplot(conf_mat_knn_after_cv_sig,conf.level = 0, margin = 1,color=c('orange','purple'),main="CM-KNN using all significant variables after CV")+ 
+    text(-0.4,0.4, "TN", cex=1) + 
+    text(0.4, -0.4, "TP", cex=1) + 
+    text(0.4,0.4, "FN", cex=1) + 
+    text(-0.4, -0.4, "FP", cex=1)+
+    text(-1.2,0.3,"Actual",cex=1)+
+    text(0.7,1.2,"Predicted",cex=1)
+fourfoldplot(conf_mat_knn_after_cv_sig1,conf.level = 0, margin = 1,color=c('orange','purple'),main="CM-KNN using all significant variables except age before CV")+ 
+    text(-0.4,0.4, "TN", cex=1) + 
+    text(0.4, -0.4, "TP", cex=1) + 
+    text(0.4,0.4, "FN", cex=1) + 
+    text(-0.4, -0.4, "FP", cex=1)+
+    text(-1.2,0.3,"Actual",cex=1)+
+    text(0.7,1.2,"Predicted",cex=1)
+fourfoldplot(conf_matrix_lg_before_cv,conf.level = 0, margin = 1,color=c('yellow','blue'),main="CM-LR using all variables before CV")+ 
+    text(-0.4,0.4, "TN", cex=1) + 
+    text(0.4, -0.4, "TP", cex=1) + 
+    text(0.4,0.4, "FN", cex=1) + 
+    text(-0.4, -0.4, "FP", cex=1)+
+    text(-1.2,0.3,"Actual",cex=1)+
+    text(0.7,1.2,"Predicted",cex=1)
+fourfoldplot(conf_mat_lg_sig_before_cv,conf.level = 0, margin = 1,color=c('yellow','blue'),main="CM-LR using optimum model before CV")+ 
+    text(-0.4,0.4, "TN", cex=1) + 
+    text(0.4, -0.4, "TP", cex=1) + 
+    text(0.4,0.4, "FN", cex=1) + 
+    text(-0.4, -0.4, "FP", cex=1)+
+    text(-1.2,0.3,"Actual",cex=1)+
+    text(0.7,1.2,"Predicted",cex=1)
+fourfoldplot(conf_mat_lg_after_cv,conf.level = 0, margin = 1,color=c('orange','purple'),main="CM-LR using all variables after CV")+ 
+    text(-0.4,0.4, "TN", cex=1) + 
+    text(0.4, -0.4, "TP", cex=1) + 
+    text(0.4,0.4, "FN", cex=1) + 
+    text(-0.4, -0.4, "FP", cex=1)+
+    text(-1.2,0.3,"Actual",cex=1)+
+    text(0.7,1.2,"Predicted",cex=1)
+fourfoldplot(conf_mat_lg_after_cv_sig,conf.level = 0, margin = 1,color=c('orange','purple'),main="CM-LR using optimum model after CV")+ 
+    text(-0.4,0.4, "TN", cex=1) + 
+    text(0.4, -0.4, "TP", cex=1) + 
+    text(0.4,0.4, "FN", cex=1) + 
+    text(-0.4, -0.4, "FP", cex=1)+
+    text(-1.2,0.3,"Actual",cex=1)+
+    text(0.7,1.2,"Predicted",cex=1)
+fourfoldplot(conf_nb,conf.level = 0, margin = 1,color=c('yellow','blue'),main="CM-NB using all variables before CV")+ 
+    text(-0.4,0.4, "TN", cex=1) + 
+    text(0.4, -0.4, "TP", cex=1) + 
+    text(0.4,0.4, "FN", cex=1) + 
+    text(-0.4, -0.4, "FP", cex=1)+
+    text(-1.2,0.3,"Actual",cex=1)+
+    text(0.7,1.2,"Predicted",cex=1)
+fourfoldplot(conf_nb_sig,conf.level = 0, margin = 1,color=c('yellow','blue'),main="CM-NB using all significant variables before CV")+ 
+    text(-0.4,0.4, "TN", cex=1) + 
+    text(0.4, -0.4, "TP", cex=1) + 
+    text(0.4,0.4, "FN", cex=1) + 
+    text(-0.4, -0.4, "FP", cex=1)+
+    text(-1.2,0.3,"Actual",cex=1)+
+    text(0.7,1.2,"Predicted",cex=1)
+fourfoldplot(conf_mat_nb_after_cv_all,conf.level = 0, margin = 1,color=c('orange','purple'),main="CM-NB using all variables after CV")+ 
+    text(-0.4,0.4, "TN", cex=1) + 
+    text(0.4, -0.4, "TP", cex=1) + 
+    text(0.4,0.4, "FN", cex=1) + 
+    text(-0.4, -0.4, "FP", cex=1)+
+    text(-1.2,0.3,"Actual",cex=1)+
+    text(0.7,1.2,"Predicted",cex=1)
+fourfoldplot(conf_mat_nb_after_cv_sig,conf.level = 0, margin = 1,color=c('orange','purple'),main="CM-NB using all significant variables after CV")+ 
+    text(-0.4,0.4, "TN", cex=1) + 
+    text(0.4, -0.4, "TP", cex=1) + 
+    text(0.4,0.4, "FN", cex=1) + 
+    text(-0.4, -0.4, "FP", cex=1)+
+    text(-1.2,0.3,"Actual",cex=1)+
+    text(0.7,1.2,"Predicted",cex=1)
+fourfoldplot(conf_mat_svm,conf.level = 0, margin = 1,color=c('yellow','blue'),main="CM-SVM using all variables before CV")+ 
+    text(-0.4,0.4, "TN", cex=1) + 
+    text(0.4, -0.4, "TP", cex=1) + 
+    text(0.4,0.4, "FN", cex=1) + 
+    text(-0.4, -0.4, "FP", cex=1)+
+    text(-1.2,0.3,"Actual",cex=1)+
+    text(0.7,1.2,"Predicted",cex=1)
+fourfoldplot(conf_svm1,conf.level = 0, margin = 1,color=c('yellow','blue'),main="CM-SVM using all significant variables before CV")+ 
+    text(-0.4,0.4, "TN", cex=1) + 
+    text(0.4, -0.4, "TP", cex=1) + 
+    text(0.4,0.4, "FN", cex=1) + 
+    text(-0.4, -0.4, "FP", cex=1)+
+    text(-1.2,0.3,"Actual",cex=1)+
+    text(0.7,1.2,"Predicted",cex=1)
+fourfoldplot(conf_svm_cv_all,conf.level = 0, margin = 1,color=c('orange','purple'),main="CM-SVM using all variables after CV")+ 
+    text(-0.4,0.4, "TN", cex=1) + 
+    text(0.4, -0.4, "TP", cex=1) + 
+    text(0.4,0.4, "FN", cex=1) + 
+    text(-0.4, -0.4, "FP", cex=1)+
+    text(-1.2,0.3,"Actual",cex=1)+
+    text(0.7,1.2,"Predicted",cex=1)
+fourfoldplot(conf_svm_cv_sig,conf.level = 0, margin = 1,color=c('orange','purple'),main="CM-SVM using all significant variables after CV")+ 
+    text(-0.4,0.4, "TN", cex=1) + 
+    text(0.4, -0.4, "TP", cex=1) + 
+    text(0.4,0.4, "FN", cex=1) + 
+    text(-0.4, -0.4, "FP", cex=1)+
+    text(-1.2,0.3,"Actual",cex=1)+
+    text(0.7,1.2,"Predicted",cex=1)
+
+```
+
+Conclusion:
+```{r}
+# From results its been observed that SVM is giving better prediction performance relative to other three classification techniques for given dataset.
+```
+
+
+References
+```{r}
+# www.medium.com
+# https://www.analyticssteps.com/blogs/what-naive-bayes-algorithm-machine-learning
+# https://machinelearningmastery.com/logistic-regression-for-machine-learning/
+# https://towardsdatascience.com/machine-learning-basics-with-the-k-nearest-neighbors-algorithm-6a6e71d01761#:~:text=KNN%20works%20by%20finding%20the,in%20the%20case%20of%20regression).
+# https://cran.r-project.org/web/packages/plotROC/vignettes/examples.html
+# https://abdalimran.github.io/2019-06-01/Drawing-multiple-ROC-Curves-in-a-single-plot
+# http://www.imsbio.co.jp/RGM/R_rdfile?f=Biocomb/man/plotRoc.curves.Rd&d=R_CC
+# https://www.rdocumentation.org/packages/graphics/versions/3.4.0/topics/legend
+# https://www.rpubs.com/CHENW05/520528
+# https://machinelearningmastery.com/cost-sensitive-svm-for-imbalanced-classification/
+# https://www.geeksforgeeks.org/understanding-logistic-regression/
+# https://nlp.stanford.edu/IR-book/html/htmledition/properties-of-naive-bayes-1.html
+# https://uc-r.github.io/naive_bayes
+```
