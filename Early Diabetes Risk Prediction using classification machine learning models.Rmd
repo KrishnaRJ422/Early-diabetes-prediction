@@ -1,6 +1,6 @@
 ---
 title: 'Predictive analytics assignment 1: Early Diabetes Risk Prediction'
-author: "Krishna Ravali J (Group 13)"
+author: "Krishna R J "
 date: "30/09/2020"
 output:
   word_document: default
