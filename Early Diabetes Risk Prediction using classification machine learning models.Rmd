@@ -1,6 +1,6 @@
 ---
-title: 'Predictive analytics assignment 1: Early Diabetes Risk Prediction'
-author: "Krishna R J "
+title: 'Predictive analytics : Early Diabetes Risk Prediction'
+author: "Krishna Ravali J "
 date: "30/09/2020"
 output:
   word_document: default
@@ -782,131 +782,131 @@ conf_svm_cv_all
 conf_svm_cv_sig
 
 fourfoldplot(conf_matrix_knn_before_cv,conf.level = 0, margin = 1,color=c('yellow','blue'),main="CM-KNN using all variables before CV")+ 
-    text(-0.4,0.4, "TN", cex=1) + 
-    text(0.4, -0.4, "TP", cex=1) + 
+    text(-0.4,0.4, "TN",col="white", cex=1) + 
+    text(0.4, -0.4, "TP",col="white", cex=1) + 
     text(0.4,0.4, "FN", cex=1) + 
     text(-0.4, -0.4, "FP", cex=1)+
     text(-1.2,0.3,"Actual",cex=1)+
-    text(0.7,1.2,"Predicted",cex=1)
+    text(0.7,1.1,"Predicted",cex=1)
 fourfoldplot(conf_matrix_sig_knn_before_cv,conf.level = 0, margin = 1,color=c('yellow','blue'),main="CM-KNN using all significant variables before CV")+ 
-    text(-0.4,0.4, "TN", cex=1) + 
-    text(0.4, -0.4, "TP", cex=1) + 
+    text(-0.4,0.4, "TN",col="white", cex=1) + 
+    text(0.4, -0.4, "TP",col="white", cex=1) + 
     text(0.4,0.4, "FN", cex=1) + 
     text(-0.4, -0.4, "FP", cex=1)+
     text(-1.2,0.3,"Actual",cex=1)+
-    text(0.7,1.2,"Predicted",cex=1)
+    text(0.7,1.1,"Predicted",cex=1)
 fourfoldplot(conf_matrix_sig1_knn_before_cv,conf.level = 0, margin = 1,color=c('yellow','blue'),main="CM-KNN using all significant variables except age before CV")+ 
-    text(-0.4,0.4, "TN", cex=1) + 
-    text(0.4, -0.4, "TP", cex=1) + 
+    text(-0.4,0.4, "TN",col="white", cex=1) + 
+    text(0.4, -0.4, "TP",col="white", cex=1) + 
     text(0.4,0.4, "FN", cex=1) + 
     text(-0.4, -0.4, "FP", cex=1)+
     text(-1.2,0.3,"Actual",cex=1)+
-    text(0.7,1.2,"Predicted",cex=1)
+    text(0.7,1.1,"Predicted",cex=1)
 fourfoldplot(conf_mat_knn_after_cv,conf.level = 0, margin = 1,color=c('orange','purple'),main="CM-KNN using all variables after CV")+ 
-    text(-0.4,0.4, "TN", cex=1) + 
-    text(0.4, -0.4, "TP", cex=1) + 
+    text(-0.4,0.4, "TN",col="white", cex=1) + 
+    text(0.4, -0.4, "TP",col="white", cex=1) + 
     text(0.4,0.4, "FN", cex=1) + 
     text(-0.4, -0.4, "FP", cex=1)+
     text(-1.2,0.3,"Actual",cex=1)+
-    text(0.7,1.2,"Predicted",cex=1)
+    text(0.7,1.1,"Predicted",cex=1)
 fourfoldplot(conf_mat_knn_after_cv_sig,conf.level = 0, margin = 1,color=c('orange','purple'),main="CM-KNN using all significant variables after CV")+ 
-    text(-0.4,0.4, "TN", cex=1) + 
-    text(0.4, -0.4, "TP", cex=1) + 
+    text(-0.4,0.4, "TN",col="white", cex=1) + 
+    text(0.4, -0.4, "TP",col="white", cex=1) + 
     text(0.4,0.4, "FN", cex=1) + 
     text(-0.4, -0.4, "FP", cex=1)+
     text(-1.2,0.3,"Actual",cex=1)+
-    text(0.7,1.2,"Predicted",cex=1)
+    text(0.7,1.1,"Predicted",cex=1)
 fourfoldplot(conf_mat_knn_after_cv_sig1,conf.level = 0, margin = 1,color=c('orange','purple'),main="CM-KNN using all significant variables except age before CV")+ 
-    text(-0.4,0.4, "TN", cex=1) + 
-    text(0.4, -0.4, "TP", cex=1) + 
+    text(-0.4,0.4, "TN",col="white", cex=1) + 
+    text(0.4, -0.4, "TP",col="white", cex=1) + 
     text(0.4,0.4, "FN", cex=1) + 
     text(-0.4, -0.4, "FP", cex=1)+
     text(-1.2,0.3,"Actual",cex=1)+
-    text(0.7,1.2,"Predicted",cex=1)
+    text(0.7,1.1,"Predicted",cex=1)
 fourfoldplot(conf_matrix_lg_before_cv,conf.level = 0, margin = 1,color=c('yellow','blue'),main="CM-LR using all variables before CV")+ 
-    text(-0.4,0.4, "TN", cex=1) + 
-    text(0.4, -0.4, "TP", cex=1) + 
+    text(-0.4,0.4, "TN",col="white", cex=1) + 
+    text(0.4, -0.4, "TP",col="white", cex=1) + 
     text(0.4,0.4, "FN", cex=1) + 
     text(-0.4, -0.4, "FP", cex=1)+
     text(-1.2,0.3,"Actual",cex=1)+
-    text(0.7,1.2,"Predicted",cex=1)
+    text(0.7,1.1,"Predicted",cex=1)
 fourfoldplot(conf_mat_lg_sig_before_cv,conf.level = 0, margin = 1,color=c('yellow','blue'),main="CM-LR using optimum model before CV")+ 
-    text(-0.4,0.4, "TN", cex=1) + 
-    text(0.4, -0.4, "TP", cex=1) + 
+    text(-0.4,0.4, "TN",col="white", cex=1) + 
+    text(0.4, -0.4, "TP",col="white", cex=1) + 
     text(0.4,0.4, "FN", cex=1) + 
     text(-0.4, -0.4, "FP", cex=1)+
     text(-1.2,0.3,"Actual",cex=1)+
-    text(0.7,1.2,"Predicted",cex=1)
+    text(0.7,1.1,"Predicted",cex=1)
 fourfoldplot(conf_mat_lg_after_cv,conf.level = 0, margin = 1,color=c('orange','purple'),main="CM-LR using all variables after CV")+ 
-    text(-0.4,0.4, "TN", cex=1) + 
-    text(0.4, -0.4, "TP", cex=1) + 
+    text(-0.4,0.4, "TN",col="white", cex=1) + 
+    text(0.4, -0.4, "TP",col="white", cex=1) + 
     text(0.4,0.4, "FN", cex=1) + 
     text(-0.4, -0.4, "FP", cex=1)+
     text(-1.2,0.3,"Actual",cex=1)+
-    text(0.7,1.2,"Predicted",cex=1)
+    text(0.7,1.1,"Predicted",cex=1)
 fourfoldplot(conf_mat_lg_after_cv_sig,conf.level = 0, margin = 1,color=c('orange','purple'),main="CM-LR using optimum model after CV")+ 
-    text(-0.4,0.4, "TN", cex=1) + 
-    text(0.4, -0.4, "TP", cex=1) + 
+    text(-0.4,0.4, "TN",col="white", cex=1) + 
+    text(0.4, -0.4, "TP",col="white", cex=1) + 
     text(0.4,0.4, "FN", cex=1) + 
     text(-0.4, -0.4, "FP", cex=1)+
     text(-1.2,0.3,"Actual",cex=1)+
-    text(0.7,1.2,"Predicted",cex=1)
+    text(0.7,1.1,"Predicted",cex=1)
 fourfoldplot(conf_nb,conf.level = 0, margin = 1,color=c('yellow','blue'),main="CM-NB using all variables before CV")+ 
-    text(-0.4,0.4, "TN", cex=1) + 
-    text(0.4, -0.4, "TP", cex=1) + 
+    text(-0.4,0.4, "TN",col="white", cex=1) + 
+    text(0.4, -0.4, "TP",col="white", cex=1) + 
     text(0.4,0.4, "FN", cex=1) + 
     text(-0.4, -0.4, "FP", cex=1)+
     text(-1.2,0.3,"Actual",cex=1)+
-    text(0.7,1.2,"Predicted",cex=1)
+    text(0.7,1.1,"Predicted",cex=1)
 fourfoldplot(conf_nb_sig,conf.level = 0, margin = 1,color=c('yellow','blue'),main="CM-NB using all significant variables before CV")+ 
-    text(-0.4,0.4, "TN", cex=1) + 
-    text(0.4, -0.4, "TP", cex=1) + 
+    text(-0.4,0.4, "TN",col="white", cex=1) + 
+    text(0.4, -0.4, "TP",col="white", cex=1) + 
     text(0.4,0.4, "FN", cex=1) + 
     text(-0.4, -0.4, "FP", cex=1)+
     text(-1.2,0.3,"Actual",cex=1)+
-    text(0.7,1.2,"Predicted",cex=1)
+    text(0.7,1.1,"Predicted",cex=1)
 fourfoldplot(conf_mat_nb_after_cv_all,conf.level = 0, margin = 1,color=c('orange','purple'),main="CM-NB using all variables after CV")+ 
-    text(-0.4,0.4, "TN", cex=1) + 
-    text(0.4, -0.4, "TP", cex=1) + 
+    text(-0.4,0.4, "TN",col="white", cex=1) + 
+    text(0.4, -0.4, "TP",col="white", cex=1) + 
     text(0.4,0.4, "FN", cex=1) + 
     text(-0.4, -0.4, "FP", cex=1)+
     text(-1.2,0.3,"Actual",cex=1)+
-    text(0.7,1.2,"Predicted",cex=1)
+    text(0.7,1.1,"Predicted",cex=1)
 fourfoldplot(conf_mat_nb_after_cv_sig,conf.level = 0, margin = 1,color=c('orange','purple'),main="CM-NB using all significant variables after CV")+ 
-    text(-0.4,0.4, "TN", cex=1) + 
-    text(0.4, -0.4, "TP", cex=1) + 
+    text(-0.4,0.4, "TN",col="white", cex=1) + 
+    text(0.4, -0.4, "TP",col="white", cex=1) + 
     text(0.4,0.4, "FN", cex=1) + 
     text(-0.4, -0.4, "FP", cex=1)+
     text(-1.2,0.3,"Actual",cex=1)+
-    text(0.7,1.2,"Predicted",cex=1)
+    text(0.7,1.1,"Predicted",cex=1)
 fourfoldplot(conf_mat_svm,conf.level = 0, margin = 1,color=c('yellow','blue'),main="CM-SVM using all variables before CV")+ 
-    text(-0.4,0.4, "TN", cex=1) + 
-    text(0.4, -0.4, "TP", cex=1) + 
+    text(-0.4,0.4, "TN",col="white", cex=1) + 
+    text(0.4, -0.4, "TP",col="white", cex=1) + 
     text(0.4,0.4, "FN", cex=1) + 
     text(-0.4, -0.4, "FP", cex=1)+
     text(-1.2,0.3,"Actual",cex=1)+
-    text(0.7,1.2,"Predicted",cex=1)
+    text(0.7,1.1,"Predicted",cex=1)
 fourfoldplot(conf_svm1,conf.level = 0, margin = 1,color=c('yellow','blue'),main="CM-SVM using all significant variables before CV")+ 
-    text(-0.4,0.4, "TN", cex=1) + 
-    text(0.4, -0.4, "TP", cex=1) + 
+    text(-0.4,0.4, "TN",col="white", cex=1) + 
+    text(0.4, -0.4, "TP",col="white", cex=1) + 
     text(0.4,0.4, "FN", cex=1) + 
     text(-0.4, -0.4, "FP", cex=1)+
     text(-1.2,0.3,"Actual",cex=1)+
-    text(0.7,1.2,"Predicted",cex=1)
+    text(0.7,1.1,"Predicted",cex=1)
 fourfoldplot(conf_svm_cv_all,conf.level = 0, margin = 1,color=c('orange','purple'),main="CM-SVM using all variables after CV")+ 
-    text(-0.4,0.4, "TN", cex=1) + 
-    text(0.4, -0.4, "TP", cex=1) + 
+    text(-0.4,0.4, "TN",col="white", cex=1) + 
+    text(0.4, -0.4, "TP",col="white", cex=1) + 
     text(0.4,0.4, "FN", cex=1) + 
     text(-0.4, -0.4, "FP", cex=1)+
     text(-1.2,0.3,"Actual",cex=1)+
-    text(0.7,1.2,"Predicted",cex=1)
+    text(0.7,1.1,"Predicted",cex=1)
 fourfoldplot(conf_svm_cv_sig,conf.level = 0, margin = 1,color=c('orange','purple'),main="CM-SVM using all significant variables after CV")+ 
-    text(-0.4,0.4, "TN", cex=1) + 
-    text(0.4, -0.4, "TP", cex=1) + 
+    text(-0.4,0.4, "TN",col="white", cex=1) + 
+    text(0.4, -0.4, "TP",col="white", cex=1) + 
     text(0.4,0.4, "FN", cex=1) + 
     text(-0.4, -0.4, "FP", cex=1)+
     text(-1.2,0.3,"Actual",cex=1)+
-    text(0.7,1.2,"Predicted",cex=1)
+    text(0.7,1.1,"Predicted",cex=1)
 
 ```
 
