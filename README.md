@@ -1,4 +1,5 @@
-# Early-diabetes-prediction
+# Early-diabetes-risk-prediction
+This work is a part of Predictive Analytics course submission in MBA third semester.
 This model uses 4 classification techniques to perform a comparative study to find optimized model to predict early risk of diabetes.
 In this techniques KNN, Logistic Regression, Naive Baye's, SVM are used.
 Accuracy, Sensitivity, Specificity, F1-score, Classification Error Rate, Precision are metrics that were compared.
